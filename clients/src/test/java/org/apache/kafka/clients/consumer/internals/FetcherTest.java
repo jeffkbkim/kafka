@@ -3809,6 +3809,52 @@ public class FetcherTest {
     }
 
     @Test
+    public void testFallbackToExistingPreferredReadReplica() {
+        buildFetcher(new MetricConfig(), OffsetResetStrategy.EARLIEST, new BytesDeserializer(), new BytesDeserializer(),
+                Integer.MAX_VALUE, IsolationLevel.READ_COMMITTED, Duration.ofMinutes(5).toMillis());
+
+        subscriptions.assignFromUser(singleton(tp0));
+        client.updateMetadata(TestUtils.metadataUpdateWith(2, singletonMap(topicName, 4)));
+        subscriptions.seek(tp0, 0);
+
+        // No preferred replica before first fetch response
+        Node selected = fetcher.selectReadReplica(tp0, Node.noNode(), time.milliseconds());
+        assertEquals(selected.id(), -1);
+
+        assertEquals(1, fetcher.sendFetches());
+        assertFalse(fetcher.hasCompletedFetches());
+
+        // Set preferred read replica to node=1
+        client.prepareResponse(fullFetchResponse(tp0, this.records, Errors.NONE, 100L,
+                FetchResponse.INVALID_LAST_STABLE_OFFSET, 0, Optional.of(1)));
+        consumerClient.poll(time.timer(0));
+        assertTrue(fetcher.hasCompletedFetches());
+
+        Map<TopicPartition, List<ConsumerRecord<byte[], byte[]>>> partitionRecords = fetchedRecords();
+        assertTrue(partitionRecords.containsKey(tp0));
+
+        selected = fetcher.selectReadReplica(tp0, Node.noNode(), time.milliseconds());
+        assertEquals(selected.id(), 1);
+
+        // Expire preferred read replica
+        time.sleep(Duration.ofMinutes(5).toMillis());
+        selected = fetcher.selectReadReplica(tp0, Node.noNode(), time.milliseconds());
+        assertEquals(selected.id(), -1);
+        assertEquals(1, fetcher.sendFetches());
+        assertFalse(fetcher.hasCompletedFetches());
+
+        // Fetch to leader replica returns error
+        client.prepareResponse(fullFetchResponse(tp0, buildRecords(1L, 1, 1), Errors.REPLICA_NOT_AVAILABLE, 100L, 0));
+        consumerClient.poll(time.timer(0));
+        assertTrue(fetcher.hasCompletedFetches());
+        fetchedRecords();
+
+        // Fallback to existing preferred read replica
+        selected = fetcher.selectReadReplica(tp0, Node.noNode(), time.milliseconds());
+        assertEquals(selected.id(), 1);
+    }
+
+    @Test
     public void testFetchCompletedBeforeHandlerAdded() {
         buildFetcher();
         assignFromUser(singleton(tp0));

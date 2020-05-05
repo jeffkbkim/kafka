@@ -514,7 +514,7 @@ public class SubscriptionState {
      * @param preferredReadReplicaId The preferred read replica
      * @param timeMs The time at which this preferred replica is no longer valid
      */
-    public synchronized void updatePreferredReadReplica(TopicPartition tp, int preferredReadReplicaId, Supplier<Long> timeMs) {
+    public synchronized void updatePreferredReadReplica(TopicPartition tp, int preferredReadReplicaId, long timeMs) {
         assignedState(tp).updatePreferredReadReplica(preferredReadReplicaId, timeMs);
     }
 
@@ -532,6 +532,17 @@ public class SubscriptionState {
         } else {
             return topicPartitionState.preferredReadReplica(timeMs);
         }
+    }
+
+    /**
+     * Refresh the current preferred read replica with a lease timeout. After this time, the replica will no longer be valid and
+     * {@link #preferredReadReplica(TopicPartition, long)} will return an empty result.
+     *
+     * @param tp The topic partition
+     * @param timeMs The time the refreshed preferred read replica will expire
+     */
+    public synchronized void refreshPreferredReadReplica(TopicPartition tp, long timeMs) {
+        assignedState(tp).refreshPreferredReadReplica(timeMs);
     }
 
     /**
@@ -687,7 +698,7 @@ public class SubscriptionState {
         private boolean paused;  // whether this partition has been paused by the user
         private OffsetResetStrategy resetStrategy;  // the strategy to use if the offset needs resetting
         private Long nextRetryTimeMs;
-        private Integer preferredReadReplica;
+        private Integer preferredReadReplica = null;
         private Long preferredReadReplicaExpireTimeMs;
 
         TopicPartitionState() {
@@ -712,18 +723,19 @@ public class SubscriptionState {
 
         private Optional<Integer> preferredReadReplica(long timeMs) {
             if (preferredReadReplicaExpireTimeMs != null && timeMs > preferredReadReplicaExpireTimeMs) {
-                preferredReadReplica = null;
                 return Optional.empty();
             } else {
                 return Optional.ofNullable(preferredReadReplica);
             }
         }
 
-        private void updatePreferredReadReplica(int preferredReadReplica, Supplier<Long> timeMs) {
-            if (this.preferredReadReplica == null || preferredReadReplica != this.preferredReadReplica) {
-                this.preferredReadReplica = preferredReadReplica;
-                this.preferredReadReplicaExpireTimeMs = timeMs.get();
-            }
+        private void updatePreferredReadReplica(Integer preferredReadReplica, long timeMs) {
+            this.preferredReadReplica = preferredReadReplica;
+            this.preferredReadReplicaExpireTimeMs = timeMs;
+        }
+
+        private void refreshPreferredReadReplica(long timeMs) {
+            updatePreferredReadReplica(preferredReadReplica, timeMs);
         }
 
         private Optional<Integer> clearPreferredReadReplica() {

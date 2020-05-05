@@ -1230,14 +1230,11 @@ public class Fetcher<K, V> implements Closeable {
                 }
 
                 if (partition.preferredReadReplica.isPresent()) {
-                    subscriptions.updatePreferredReadReplica(completedFetch.partition, partition.preferredReadReplica.get(), () -> {
-                        long expireTimeMs = time.milliseconds() + metadata.metadataExpireMs();
-                        log.debug("Updating preferred read replica for partition {} to {}, set to expire at {}",
-                                tp, partition.preferredReadReplica.get(), expireTimeMs);
-                        return expireTimeMs;
-                    });
+                    long expireTimeMs = time.milliseconds() + metadata.metadataExpireMs();
+                    log.debug("Updating preferred read replica for partition {} to {}, set to expire at {}",
+                            tp, partition.preferredReadReplica.get(), expireTimeMs);
+                    subscriptions.updatePreferredReadReplica(completedFetch.partition, partition.preferredReadReplica.get(), expireTimeMs);
                 }
-
 
                 nextCompletedFetch.initialized = true;
             } else if (error == Errors.NOT_LEADER_FOR_PARTITION ||
@@ -1282,10 +1279,12 @@ public class Fetcher<K, V> implements Closeable {
             if (completedFetch == null)
                 nextCompletedFetch.metricAggregator.record(tp, 0, 0);
 
-            if (error != Errors.NONE)
+            if (error != Errors.NONE) {
                 // we move the partition to the end if there was an error. This way, it's more likely that partitions for
                 // the same topic can remain together (allowing for more efficient serialization).
                 subscriptions.movePartitionToEnd(tp);
+                subscriptions.refreshPreferredReadReplica(tp,time.milliseconds() + metadata.metadataExpireMs());
+            }
         }
 
         return completedFetch;
