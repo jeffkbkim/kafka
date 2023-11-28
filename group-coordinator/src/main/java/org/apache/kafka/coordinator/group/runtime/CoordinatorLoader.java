@@ -20,6 +20,7 @@ import org.apache.kafka.common.TopicPartition;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 /**
  * Interface to implement a coordinator loader. A loader reads records
@@ -109,11 +110,15 @@ public interface CoordinatorLoader<U> extends AutoCloseable {
      * Loads the coordinator by reading all the records from the TopicPartition
      * and applying them to the Replayable object.
      *
-     * @param tp            The TopicPartition to read from.
-     * @param coordinator   The object to apply records to.
+     * @param tp                      The TopicPartition to read from.
+     * @param coordinator             The object to apply records to.
+     * @param onLoadedBatch           Invoked when a batch was successfully loaded.
+     * @param onHighWatermarkUpdated  Invoked when the high watermark advanced.
      */
     CompletableFuture<LoadSummary> load(
         TopicPartition tp,
-        CoordinatorPlayback<U> coordinator
+        CoordinatorPlayback<U> coordinator,
+        Consumer<Long> onLoadedBatch,
+        Consumer<Long> onHighWatermarkUpdated
     );
 }

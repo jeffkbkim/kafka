@@ -30,6 +30,7 @@ import org.apache.kafka.storage.internals.log.FetchIsolation
 import java.nio.ByteBuffer
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.function.Consumer
 import scala.jdk.CollectionConverters._
 
 /**
@@ -55,17 +56,21 @@ class CoordinatorLoaderImpl[T](
    * Loads the coordinator by reading all the records from the TopicPartition
    * and applying them to the Replayable object.
    *
-   * @param tp          The TopicPartition to read from.
-   * @param coordinator The object to apply records to.
+   * @param tp                      The TopicPartition to read from.
+   * @param coordinator             The object to apply records to.
+   * @param onLoadedBatch           Invoked when a batch was successfully loaded.
+   * @param onHighWatermarkUpdated  Invoked when the high watermark advanced.
    */
   override def load(
     tp: TopicPartition,
-    coordinator: CoordinatorPlayback[T]
+    coordinator: CoordinatorPlayback[T],
+    onLoadedBatch: Consumer[java.lang.Long],
+    onHighWatermarkUpdated: Consumer[java.lang.Long]
 ): CompletableFuture[LoadSummary] = {
     val future = new CompletableFuture[LoadSummary]()
     val startTimeMs = time.milliseconds()
     val result = scheduler.scheduleOnce(s"Load coordinator from $tp",
-      () => doLoad(tp, coordinator, future, startTimeMs))
+      () => doLoad(tp, coordinator, future, startTimeMs, onLoadedBatch, onHighWatermarkUpdated))
     if (result.isCancelled) {
       future.completeExceptionally(new RuntimeException("Coordinator loader is closed."))
     }
@@ -76,7 +81,9 @@ class CoordinatorLoaderImpl[T](
     tp: TopicPartition,
     coordinator: CoordinatorPlayback[T],
     future: CompletableFuture[LoadSummary],
-    startTimeMs: Long
+    startTimeMs: Long,
+    onLoadedBatch: Consumer[java.lang.Long],
+    onHighWatermarkUpdated: Consumer[java.lang.Long]
   ): Unit = {
     try {
       replicaManager.getLog(tp) match {
@@ -96,6 +103,7 @@ class CoordinatorLoaderImpl[T](
           // the log end offset but the log is empty. This could happen with compacted topics.
           var readAtLeastOneRecord = true
 
+          var previousHighWatermark = -1L
           var numRecords = 0
           var numBytes = 0
           while (currentOffset < logEndOffset && readAtLeastOneRecord && isRunning.get) {
@@ -146,6 +154,16 @@ class CoordinatorLoaderImpl[T](
                         s"from $tp. Ignoring it. It could be a left over from an aborted upgrade.")
                   }
                 }
+              }
+
+              val currentHighWatermark = log.highWatermark
+              if (currentHighWatermark > previousHighWatermark) {
+                onHighWatermarkUpdated.accept(currentHighWatermark)
+                previousHighWatermark = currentHighWatermark
+              }
+
+              if (currentOffset >= currentHighWatermark) {
+                onLoadedBatch.accept(currentOffset)
               }
 
               currentOffset = batch.nextOffset

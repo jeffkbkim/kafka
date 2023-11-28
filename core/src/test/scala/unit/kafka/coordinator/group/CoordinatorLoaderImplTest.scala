@@ -30,12 +30,13 @@ import org.apache.kafka.test.TestUtils.assertFutureThrows
 import org.junit.jupiter.api.Assertions.{assertEquals, assertNotNull}
 import org.junit.jupiter.api.{Test, Timeout}
 import org.mockito.{ArgumentCaptor, ArgumentMatchers}
-import org.mockito.Mockito.{mock, verify, when}
+import org.mockito.Mockito.{mock, times, verify, when}
 import org.mockito.invocation.InvocationOnMock
 
 import java.nio.ByteBuffer
 import java.nio.charset.Charset
 import java.util.concurrent.{CountDownLatch, TimeUnit}
+import java.util.function.Consumer
 
 class StringKeyValueDeserializer extends CoordinatorLoader.Deserializer[(String, String)] {
   override def deserialize(key: ByteBuffer, value: ByteBuffer): (String, String) = {
@@ -54,6 +55,8 @@ class CoordinatorLoaderImplTest {
     val replicaManager = mock(classOf[ReplicaManager])
     val serde = mock(classOf[CoordinatorLoader.Deserializer[(String, String)]])
     val coordinator = mock(classOf[CoordinatorPlayback[(String, String)]])
+    val onLoadedBatch = mock(classOf[Consumer[java.lang.Long]])
+    val onHighWatermarkUpdated = mock(classOf[Consumer[java.lang.Long]])
 
     TestUtils.resource(new CoordinatorLoaderImpl[(String, String)](
       time = Time.SYSTEM,
@@ -63,7 +66,7 @@ class CoordinatorLoaderImplTest {
     )) { loader =>
       when(replicaManager.getLog(tp)).thenReturn(None)
 
-      val result = loader.load(tp, coordinator)
+      val result = loader.load(tp, coordinator, onLoadedBatch, onHighWatermarkUpdated)
       assertFutureThrows(result, classOf[NotLeaderOrFollowerException])
     }
   }
@@ -74,6 +77,8 @@ class CoordinatorLoaderImplTest {
     val replicaManager = mock(classOf[ReplicaManager])
     val serde = mock(classOf[CoordinatorLoader.Deserializer[(String, String)]])
     val coordinator = mock(classOf[CoordinatorPlayback[(String, String)]])
+    val onLoadedBatch = mock(classOf[Consumer[java.lang.Long]])
+    val onHighWatermarkUpdated = mock(classOf[Consumer[java.lang.Long]])
 
     TestUtils.resource(new CoordinatorLoaderImpl[(String, String)](
       time = Time.SYSTEM,
@@ -83,7 +88,7 @@ class CoordinatorLoaderImplTest {
     )) { loader =>
       loader.close()
 
-      val result = loader.load(tp, coordinator)
+      val result = loader.load(tp, coordinator, onLoadedBatch, onHighWatermarkUpdated)
       assertFutureThrows(result, classOf[RuntimeException])
     }
   }
@@ -95,6 +100,8 @@ class CoordinatorLoaderImplTest {
     val serde = new StringKeyValueDeserializer
     val log = mock(classOf[UnifiedLog])
     val coordinator = mock(classOf[CoordinatorPlayback[(String, String)]])
+    val onLoadedBatch = mock(classOf[Consumer[java.lang.Long]])
+    val onHighWatermarkUpdated = mock(classOf[Consumer[java.lang.Long]])
 
     TestUtils.resource(new CoordinatorLoaderImpl[(String, String)](
       time = Time.SYSTEM,
@@ -104,6 +111,7 @@ class CoordinatorLoaderImplTest {
     )) { loader =>
       when(replicaManager.getLog(tp)).thenReturn(Some(log))
       when(log.logStartOffset).thenReturn(0L)
+      when(log.highWatermark).thenReturn(0L)
       when(replicaManager.getLogEndOffset(tp)).thenReturn(Some(5L))
 
       val readResult1 = logReadResult(startOffset = 0, records = Seq(
@@ -131,13 +139,16 @@ class CoordinatorLoaderImplTest {
         minOneMessage = true
       )).thenReturn(readResult2)
 
-      assertNotNull(loader.load(tp, coordinator).get(10, TimeUnit.SECONDS))
+      assertNotNull(loader.load(tp, coordinator, onLoadedBatch, onHighWatermarkUpdated).get(10, TimeUnit.SECONDS))
 
       verify(coordinator).replay(("k1", "v1"))
       verify(coordinator).replay(("k2", "v2"))
       verify(coordinator).replay(("k3", "v3"))
       verify(coordinator).replay(("k4", "v4"))
       verify(coordinator).replay(("k5", "v5"))
+      verify(onLoadedBatch).accept(0)
+      verify(onLoadedBatch).accept(2)
+      verify(onHighWatermarkUpdated).accept(0)
     }
   }
 
@@ -148,6 +159,8 @@ class CoordinatorLoaderImplTest {
     val serde = new StringKeyValueDeserializer
     val log = mock(classOf[UnifiedLog])
     val coordinator = mock(classOf[CoordinatorPlayback[(String, String)]])
+    val onLoadedBatch = mock(classOf[Consumer[java.lang.Long]])
+    val onHighWatermarkUpdated = mock(classOf[Consumer[java.lang.Long]])
 
     TestUtils.resource(new CoordinatorLoaderImpl[(String, String)](
       time = Time.SYSTEM,
@@ -175,7 +188,7 @@ class CoordinatorLoaderImplTest {
         readResult
       }
 
-      val result = loader.load(tp, coordinator)
+      val result = loader.load(tp, coordinator, onLoadedBatch, onHighWatermarkUpdated)
       latch.await(10, TimeUnit.SECONDS)
       loader.close()
 
@@ -191,6 +204,8 @@ class CoordinatorLoaderImplTest {
     val serde = mock(classOf[StringKeyValueDeserializer])
     val log = mock(classOf[UnifiedLog])
     val coordinator = mock(classOf[CoordinatorPlayback[(String, String)]])
+    val onLoadedBatch = mock(classOf[Consumer[java.lang.Long]])
+    val onHighWatermarkUpdated = mock(classOf[Consumer[java.lang.Long]])
 
     TestUtils.resource(new CoordinatorLoaderImpl[(String, String)](
       time = Time.SYSTEM,
@@ -218,7 +233,7 @@ class CoordinatorLoaderImplTest {
         .thenThrow(new UnknownRecordTypeException(1))
         .thenReturn(("k2", "v2"))
 
-      loader.load(tp, coordinator).get(10, TimeUnit.SECONDS)
+      loader.load(tp, coordinator, onLoadedBatch, onHighWatermarkUpdated).get(10, TimeUnit.SECONDS)
 
       verify(coordinator).replay(("k2", "v2"))
     }
@@ -231,6 +246,8 @@ class CoordinatorLoaderImplTest {
     val serde = mock(classOf[StringKeyValueDeserializer])
     val log = mock(classOf[UnifiedLog])
     val coordinator = mock(classOf[CoordinatorPlayback[(String, String)]])
+    val onLoadedBatch = mock(classOf[Consumer[java.lang.Long]])
+    val onHighWatermarkUpdated = mock(classOf[Consumer[java.lang.Long]])
 
     TestUtils.resource(new CoordinatorLoaderImpl[(String, String)](
       time = Time.SYSTEM,
@@ -257,7 +274,7 @@ class CoordinatorLoaderImplTest {
       when(serde.deserialize(ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenThrow(new RuntimeException("Error!"))
 
-      val ex = assertFutureThrows(loader.load(tp, coordinator), classOf[RuntimeException])
+      val ex = assertFutureThrows(loader.load(tp, coordinator, onLoadedBatch, onHighWatermarkUpdated), classOf[RuntimeException])
       assertEquals("Error!", ex.getMessage)
     }
   }
@@ -272,6 +289,8 @@ class CoordinatorLoaderImplTest {
     val serde = mock(classOf[StringKeyValueDeserializer])
     val log = mock(classOf[UnifiedLog])
     val coordinator = mock(classOf[CoordinatorPlayback[(String, String)]])
+    val onLoadedBatch = mock(classOf[Consumer[java.lang.Long]])
+    val onHighWatermarkUpdated = mock(classOf[Consumer[java.lang.Long]])
 
     TestUtils.resource(new CoordinatorLoaderImpl[(String, String)](
       time = Time.SYSTEM,
@@ -292,7 +311,7 @@ class CoordinatorLoaderImplTest {
         minOneMessage = true
       )).thenReturn(readResult)
 
-      assertNotNull(loader.load(tp, coordinator).get(10, TimeUnit.SECONDS))
+      assertNotNull(loader.load(tp, coordinator, onLoadedBatch, onHighWatermarkUpdated).get(10, TimeUnit.SECONDS))
     }
   }
 
@@ -304,6 +323,8 @@ class CoordinatorLoaderImplTest {
     val log = mock(classOf[UnifiedLog])
     val coordinator = mock(classOf[CoordinatorPlayback[(String, String)]])
     val time = new MockTime()
+    val onLoadedBatch = mock(classOf[Consumer[java.lang.Long]])
+    val onHighWatermarkUpdated = mock(classOf[Consumer[java.lang.Long]])
 
     TestUtils.resource(new CoordinatorLoaderImpl[(String, String)](
       time,
@@ -344,11 +365,118 @@ class CoordinatorLoaderImplTest {
         minOneMessage = true
       )).thenReturn(readResult2)
 
-      val summary = loader.load(tp, coordinator).get(10, TimeUnit.SECONDS)
+      val summary = loader.load(tp, coordinator, onLoadedBatch, onHighWatermarkUpdated).get(10, TimeUnit.SECONDS)
       assertEquals(startTimeMs, summary.startTimeMs())
       assertEquals(startTimeMs + 1000, summary.endTimeMs())
       assertEquals(5, summary.numRecords())
       assertEquals(readResult1.records.sizeInBytes() + readResult2.records.sizeInBytes(), summary.numBytes())
+    }
+  }
+
+  @Test
+  def testOnLoadedBatchOnHighWatermarkUpdated(): Unit = {
+    val tp = new TopicPartition("foo", 0)
+    val replicaManager = mock(classOf[ReplicaManager])
+    val serde = new StringKeyValueDeserializer
+    val log = mock(classOf[UnifiedLog])
+    val coordinator = mock(classOf[CoordinatorPlayback[(String, String)]])
+    val onLoadedBatch = mock(classOf[Consumer[java.lang.Long]])
+    val onHighWatermarkUpdated = mock(classOf[Consumer[java.lang.Long]])
+
+    TestUtils.resource(new CoordinatorLoaderImpl[(String, String)](
+      time = Time.SYSTEM,
+      replicaManager = replicaManager,
+      deserializer = serde,
+      loadBufferSize = 1000
+    )) { loader =>
+      when(replicaManager.getLog(tp)).thenReturn(Some(log))
+      when(log.logStartOffset).thenReturn(0L)
+      when(log.highWatermark).thenReturn(0L).thenReturn(0L).thenReturn(2L)
+      when(replicaManager.getLogEndOffset(tp)).thenReturn(Some(7L))
+
+      val readResult1 = logReadResult(startOffset = 0, records = Seq(
+        new SimpleRecord("k1".getBytes, "v1".getBytes),
+        new SimpleRecord("k2".getBytes, "v2".getBytes)
+      ))
+
+      when(log.read(
+        startOffset = 0L,
+        maxLength = 1000,
+        isolation = FetchIsolation.LOG_END,
+        minOneMessage = true
+      )).thenReturn(readResult1)
+
+      val readResult2 = logReadResult(startOffset = 2, records = Seq(
+        new SimpleRecord("k3".getBytes, "v3".getBytes),
+        new SimpleRecord("k4".getBytes, "v4".getBytes),
+        new SimpleRecord("k5".getBytes, "v5".getBytes)
+      ))
+
+      when(log.read(
+        startOffset = 2L,
+        maxLength = 1000,
+        isolation = FetchIsolation.LOG_END,
+        minOneMessage = true
+      )).thenReturn(readResult2)
+
+      val readResult3 = logReadResult(startOffset = 5, records = Seq(
+        new SimpleRecord("k6".getBytes, "v6".getBytes),
+        new SimpleRecord("k7".getBytes, "v7".getBytes)
+      ))
+
+      when(log.read(
+        startOffset = 5L,
+        maxLength = 1000,
+        isolation = FetchIsolation.LOG_END,
+        minOneMessage = true
+      )).thenReturn(readResult3)
+
+      assertNotNull(loader.load(tp, coordinator, onLoadedBatch, onHighWatermarkUpdated).get(10, TimeUnit.SECONDS))
+
+      verify(coordinator).replay(("k1", "v1"))
+      verify(coordinator).replay(("k2", "v2"))
+      verify(coordinator).replay(("k3", "v3"))
+      verify(coordinator).replay(("k4", "v4"))
+      verify(coordinator).replay(("k5", "v5"))
+      verify(coordinator).replay(("k6", "v6"))
+      verify(coordinator).replay(("k7", "v7"))
+      verify(onLoadedBatch, times(1)).accept(0)
+      verify(onLoadedBatch, times(1)).accept(2)
+      verify(onLoadedBatch, times(1)).accept(5)
+      verify(onHighWatermarkUpdated, times(1)).accept(0)
+      verify(onHighWatermarkUpdated, times(1)).accept(2)
+      verify(onHighWatermarkUpdated, times(0)).accept(5)
+    }
+  }
+
+  @Test
+  def testOnLoadedBatchAndOnHighWatermarkUpdatedNoRecordsRead(): Unit = {
+    val tp = new TopicPartition("foo", 0)
+    val replicaManager = mock(classOf[ReplicaManager])
+    val serde = new StringKeyValueDeserializer
+    val log = mock(classOf[UnifiedLog])
+    val coordinator = mock(classOf[CoordinatorPlayback[(String, String)]])
+    val onLoadedBatch = mock(classOf[Consumer[java.lang.Long]])
+    val onHighWatermarkUpdated = mock(classOf[Consumer[java.lang.Long]])
+
+    TestUtils.resource(new CoordinatorLoaderImpl[(String, String)](
+      time = Time.SYSTEM,
+      replicaManager = replicaManager,
+      deserializer = serde,
+      loadBufferSize = 1000
+    )) { loader =>
+      when(replicaManager.getLog(tp)).thenReturn(Some(log))
+      when(log.logStartOffset).thenReturn(0L)
+      when(log.highWatermark).thenReturn(0L)
+      when(replicaManager.getLogEndOffset(tp)).thenReturn(Some(0L))
+
+      assertNotNull(loader.load(tp, coordinator, onLoadedBatch, onHighWatermarkUpdated).get(10, TimeUnit.SECONDS))
+
+      verify(onLoadedBatch, times(0)).accept(0)
+      verify(onLoadedBatch, times(0)).accept(2)
+      verify(onLoadedBatch, times(0)).accept(5)
+      verify(onHighWatermarkUpdated, times(0)).accept(0)
+      verify(onHighWatermarkUpdated, times(0)).accept(2)
     }
   }
 

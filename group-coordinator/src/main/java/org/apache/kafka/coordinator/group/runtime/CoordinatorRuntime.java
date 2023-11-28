@@ -528,8 +528,8 @@ public class CoordinatorRuntime<S extends CoordinatorShard<U>, U> implements Aut
                 case LOADING:
                     state = CoordinatorState.LOADING;
                     snapshotRegistry = new SnapshotRegistry(logContext);
-                    lastWrittenOffset = 0L;
-                    lastCommittedOffset = 0L;
+                    lastWrittenOffset = -1L;
+                    lastCommittedOffset = -1L;
                     coordinator = coordinatorShardBuilderSupplier
                         .get()
                         .withLogContext(logContext)
@@ -543,8 +543,14 @@ public class CoordinatorRuntime<S extends CoordinatorShard<U>, U> implements Aut
 
                 case ACTIVE:
                     state = CoordinatorState.ACTIVE;
-                    snapshotRegistry.getOrCreateSnapshot(0);
                     partitionWriter.registerListener(tp, highWatermarklistener);
+
+                    // If the partition did not contain any records, we would not have generated a snapshot
+                    // while loading.
+                    if (lastWrittenOffset == -1L) {
+                        updateLastWrittenOffset(0);
+                        updateLastCommittedOffset(0);
+                    }
                     coordinator.onLoaded(metadataImage);
                     break;
 
@@ -1315,7 +1321,12 @@ public class CoordinatorRuntime<S extends CoordinatorShard<U>, U> implements Aut
                         case FAILED:
                         case INITIAL:
                             context.transitionTo(CoordinatorState.LOADING);
-                            loader.load(tp, context.coordinator).whenComplete((summary, exception) -> {
+                            loader.load(
+                                tp,
+                                context.coordinator,
+                                context::updateLastWrittenOffset,
+                                context::updateLastCommittedOffset
+                            ).whenComplete((summary, exception) -> {
                                 scheduleInternalOperation("CompleteLoad(tp=" + tp + ", epoch=" + partitionEpoch + ")", tp, () -> {
                                     withContextOrThrow(tp, ctx -> {
                                         if (ctx.state != CoordinatorState.LOADING) {
