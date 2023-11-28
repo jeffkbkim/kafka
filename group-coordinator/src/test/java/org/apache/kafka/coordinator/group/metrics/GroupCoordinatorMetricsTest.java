@@ -34,7 +34,7 @@ import java.util.stream.IntStream;
 import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.GENERIC_GROUP_COMPLETED_REBALANCES_SENSOR_NAME;
 import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.CONSUMER_GROUP_REBALANCES_SENSOR_NAME;
 import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.GENERIC_GROUP_REBALANCES_SENSOR_NAME;
-import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS;
+import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS_METRIC_NAME;
 import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_OFFSETS;
 import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.OFFSET_COMMITS_SENSOR_NAME;
 import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.OFFSET_EXPIRED_SENSOR_NAME;
@@ -64,7 +64,13 @@ public class GroupCoordinatorMetricsTest {
             metrics.metricName("group-rebalance-rate", GroupCoordinatorMetrics.METRICS_GROUP),
             metrics.metricName("group-rebalance-count", GroupCoordinatorMetrics.METRICS_GROUP),
             metrics.metricName("consumer-group-rebalance-rate", GroupCoordinatorMetrics.METRICS_GROUP),
-            metrics.metricName("consumer-group-rebalance-count", GroupCoordinatorMetrics.METRICS_GROUP)
+            metrics.metricName("consumer-group-rebalance-count", GroupCoordinatorMetrics.METRICS_GROUP),
+            metrics.metricName("consumer-groups-size", GroupCoordinatorMetrics.METRICS_GROUP),
+            metrics.metricName("empty-consumer-groups-size", GroupCoordinatorMetrics.METRICS_GROUP),
+            metrics.metricName("assigning-consumer-groups-size", GroupCoordinatorMetrics.METRICS_GROUP),
+            metrics.metricName("reconciling-consumer-groups-size", GroupCoordinatorMetrics.METRICS_GROUP),
+            metrics.metricName("stable-consumer-groups-size", GroupCoordinatorMetrics.METRICS_GROUP),
+            metrics.metricName("dead-consumer-groups-size", GroupCoordinatorMetrics.METRICS_GROUP)
         ));
 
         try {
@@ -76,13 +82,7 @@ public class GroupCoordinatorMetricsTest {
                     "kafka.coordinator.group:type=GroupMetadataManager,name=NumGroupsCompletingRebalance",
                     "kafka.coordinator.group:type=GroupMetadataManager,name=NumGroupsStable",
                     "kafka.coordinator.group:type=GroupMetadataManager,name=NumGroupsDead",
-                    "kafka.coordinator.group:type=GroupMetadataManager,name=NumGroupsEmpty",
-                    "kafka.coordinator.group:type=GroupMetadataManager,name=NumConsumerGroups",
-                    "kafka.coordinator.group:type=GroupMetadataManager,name=NumConsumerGroupsEmpty",
-                    "kafka.coordinator.group:type=GroupMetadataManager,name=NumConsumerGroupsAssigning",
-                    "kafka.coordinator.group:type=GroupMetadataManager,name=NumConsumerGroupsReconciling",
-                    "kafka.coordinator.group:type=GroupMetadataManager,name=NumConsumerGroupsStable",
-                    "kafka.coordinator.group:type=GroupMetadataManager,name=NumConsumerGroupsDead"
+                    "kafka.coordinator.group:type=GroupMetadataManager,name=NumGroupsEmpty"
                 ));
 
                 assertMetricsForTypeEqual(registry, "kafka.coordinator.group", expectedRegistry);
@@ -109,26 +109,26 @@ public class GroupCoordinatorMetricsTest {
         coordinatorMetrics.activateMetricsShard(shard0);
         coordinatorMetrics.activateMetricsShard(shard1);
 
-        IntStream.range(0, 5).forEach(__ -> shard0.incrementLocalGauge(NUM_CONSUMER_GROUPS));
-        IntStream.range(0, 5).forEach(__ -> shard1.incrementLocalGauge(NUM_CONSUMER_GROUPS));
-        IntStream.range(0, 3).forEach(__ -> shard1.decrementLocalGauge(NUM_CONSUMER_GROUPS));
+        IntStream.range(0, 5).forEach(__ -> shard0.incrementLocalGauge(NUM_CONSUMER_GROUPS_METRIC_NAME));
+        IntStream.range(0, 5).forEach(__ -> shard1.incrementLocalGauge(NUM_CONSUMER_GROUPS_METRIC_NAME));
+        IntStream.range(0, 3).forEach(__ -> shard1.decrementLocalGauge(NUM_CONSUMER_GROUPS_METRIC_NAME));
 
-        IntStream.range(0, 6).forEach(__ -> shard0.incrementLocalGauge(NUM_OFFSETS));
-        IntStream.range(0, 2).forEach(__ -> shard1.incrementLocalGauge(NUM_OFFSETS));
-        IntStream.range(0, 1).forEach(__ -> shard1.decrementLocalGauge(NUM_OFFSETS));
+        IntStream.range(0, 6).forEach(__ -> shard0.incrementLocalGauge(NUM_OFFSETS.getName()));
+        IntStream.range(0, 2).forEach(__ -> shard1.incrementLocalGauge(NUM_OFFSETS.getName()));
+        IntStream.range(0, 1).forEach(__ -> shard1.decrementLocalGauge(NUM_OFFSETS.getName()));
 
         snapshotRegistry0.getOrCreateSnapshot(1000);
         snapshotRegistry1.getOrCreateSnapshot(1500);
         shard0.commitUpTo(1000);
         shard1.commitUpTo(1500);
 
-        assertEquals(5, shard0.localGaugeValue(NUM_CONSUMER_GROUPS));
-        assertEquals(2, shard1.localGaugeValue(NUM_CONSUMER_GROUPS));
-        assertEquals(6, shard0.localGaugeValue(NUM_OFFSETS));
-        assertEquals(1, shard1.localGaugeValue(NUM_OFFSETS));
+        assertEquals(5, shard0.localGaugeValue(NUM_CONSUMER_GROUPS_METRIC_NAME));
+        assertEquals(2, shard1.localGaugeValue(NUM_CONSUMER_GROUPS_METRIC_NAME));
+        assertEquals(6, shard0.localGaugeValue(NUM_OFFSETS.getName()));
+        assertEquals(1, shard1.localGaugeValue(NUM_OFFSETS.getName()));
         assertEquals(7, coordinatorMetrics.numConsumerGroups());
         assertEquals(7, coordinatorMetrics.numOffsets());
-        assertGaugeValue(registry, metricName("GroupMetadataManager", "NumConsumerGroups"), 7);
+        assertGaugeValue(metrics, NUM_CONSUMER_GROUPS_METRIC_NAME, 7);
         assertGaugeValue(registry, metricName("GroupMetadataManager", "NumOffsets"), 7);
     }
 

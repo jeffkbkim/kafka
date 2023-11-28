@@ -16,7 +16,6 @@
  */
 package org.apache.kafka.coordinator.group.metrics;
 
-import com.yammer.metrics.core.MetricName;
 import org.apache.kafka.common.TopicPartition;
 
 /**
@@ -31,42 +30,42 @@ public interface CoordinatorMetricsShard {
      *
      * @param metricName the metric name.
      */
-    void incrementGlobalGauge(MetricName metricName);
+    void incrementGlobalGauge(String metricName);
 
     /**
      * Increment a local gauge.
      *
      * @param metricName the metric name.
      */
-    void incrementLocalGauge(MetricName metricName);
+    void incrementLocalGauge(String metricName);
 
     /**
-     * Decrement a global gauge.
+     * Decrement a global yammer gauge.
      *
      * @param metricName the metric name.
      */
-    void decrementGlobalGauge(MetricName metricName);
+    void decrementGlobalGauge(String metricName);
 
     /**
      * Decrement a local gauge.
      *
      * @param metricName the metric name.
      */
-    void decrementLocalGauge(MetricName metricName);
+    void decrementLocalGauge(String metricName);
 
     /**
      * Obtain the current value of a global gauge.
      *
      * @param metricName the metric name.
      */
-    long globalGaugeValue(MetricName metricName);
+    long globalGaugeValue(String metricName);
 
     /**
      * Obtain the current value of a local gauge.
      *
      * @param metricName the metric name.
      */
-    long localGaugeValue(MetricName metricName);
+    long localGaugeValue(String metricName);
 
     /**
      * Increment the value of a sensor.

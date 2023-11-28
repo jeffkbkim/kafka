@@ -16,7 +16,6 @@
  */
 package org.apache.kafka.coordinator.group.metrics;
 
-import com.yammer.metrics.core.MetricName;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.metrics.Sensor;
 import org.apache.kafka.common.utils.Utils;
@@ -30,12 +29,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS;
-import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS_ASSIGNING;
-import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS_DEAD;
-import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS_EMPTY;
-import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS_RECONCILING;
-import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS_STABLE;
+import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS_ASSIGNING_METRIC_NAME;
+import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS_DEAD_METRIC_NAME;
+import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS_EMPTY_METRIC_NAME;
+import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS_METRIC_NAME;
+import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS_RECONCILING_METRIC_NAME;
+import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS_STABLE_METRIC_NAME;
 import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_GENERIC_GROUPS;
 import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_GENERIC_GROUPS_COMPLETING_REBALANCE;
 import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_GENERIC_GROUPS_DEAD;
@@ -113,17 +112,17 @@ public class GroupCoordinatorMetricsShard implements CoordinatorMetricsShard {
                 new TimelineGaugeCounter(numOffsetsTimeline, new AtomicLong(0))),
             Utils.mkEntry(NUM_GENERIC_GROUPS.getName(),
                 new TimelineGaugeCounter(numGenericGroupsTimeline, new AtomicLong(0))),
-            Utils.mkEntry(NUM_CONSUMER_GROUPS.getName(),
+            Utils.mkEntry(NUM_CONSUMER_GROUPS_METRIC_NAME,
                 new TimelineGaugeCounter(numConsumerGroupsTimeline, new AtomicLong(0))),
-            Utils.mkEntry(NUM_CONSUMER_GROUPS_EMPTY.getName(),
+            Utils.mkEntry(NUM_CONSUMER_GROUPS_EMPTY_METRIC_NAME,
                 new TimelineGaugeCounter(numConsumerGroupsEmptyTimeline, new AtomicLong(0))),
-            Utils.mkEntry(NUM_CONSUMER_GROUPS_ASSIGNING.getName(),
+            Utils.mkEntry(NUM_CONSUMER_GROUPS_ASSIGNING_METRIC_NAME,
                 new TimelineGaugeCounter(numConsumerGroupsAssigningTimeline, new AtomicLong(0))),
-            Utils.mkEntry(NUM_CONSUMER_GROUPS_RECONCILING.getName(),
+            Utils.mkEntry(NUM_CONSUMER_GROUPS_RECONCILING_METRIC_NAME,
                 new TimelineGaugeCounter(numConsumerGroupsReconcilingTimeline, new AtomicLong(0))),
-            Utils.mkEntry(NUM_CONSUMER_GROUPS_STABLE.getName(),
+            Utils.mkEntry(NUM_CONSUMER_GROUPS_STABLE_METRIC_NAME,
                 new TimelineGaugeCounter(numConsumerGroupsStableTimeline, new AtomicLong(0))),
-            Utils.mkEntry(NUM_CONSUMER_GROUPS_DEAD.getName(),
+            Utils.mkEntry(NUM_CONSUMER_GROUPS_DEAD_METRIC_NAME,
                 new TimelineGaugeCounter(numConsumerGroupsDeadTimeline, new AtomicLong(0)))
         ));
 
@@ -133,16 +132,16 @@ public class GroupCoordinatorMetricsShard implements CoordinatorMetricsShard {
     }
 
     @Override
-    public void incrementGlobalGauge(MetricName metricName) {
-        AtomicLong gaugeCounter = globalGauges.get(metricName.getName());
+    public void incrementGlobalGauge(String metricName) {
+        AtomicLong gaugeCounter = globalGauges.get(metricName);
         if (gaugeCounter != null) {
             gaugeCounter.incrementAndGet();
         }
     }
 
     @Override
-    public void incrementLocalGauge(MetricName metricName) {
-        TimelineGaugeCounter gaugeCounter = localGauges.get(metricName.getName());
+    public void incrementLocalGauge(String metricName) {
+        TimelineGaugeCounter gaugeCounter = localGauges.get(metricName);
         if (gaugeCounter != null) {
             synchronized (gaugeCounter.timelineLong) {
                 gaugeCounter.timelineLong.increment();
@@ -151,16 +150,16 @@ public class GroupCoordinatorMetricsShard implements CoordinatorMetricsShard {
     }
 
     @Override
-    public void decrementGlobalGauge(MetricName metricName) {
-        AtomicLong gaugeCounter = globalGauges.get(metricName.getName());
+    public void decrementGlobalGauge(String metricName) {
+        AtomicLong gaugeCounter = globalGauges.get(metricName);
         if (gaugeCounter != null) {
             gaugeCounter.decrementAndGet();
         }
     }
 
     @Override
-    public void decrementLocalGauge(MetricName metricName) {
-        TimelineGaugeCounter gaugeCounter = localGauges.get(metricName.getName());
+    public void decrementLocalGauge(String metricName) {
+        TimelineGaugeCounter gaugeCounter = localGauges.get(metricName);
         if (gaugeCounter != null) {
             synchronized (gaugeCounter.timelineLong) {
                 gaugeCounter.timelineLong.decrement();
@@ -169,8 +168,8 @@ public class GroupCoordinatorMetricsShard implements CoordinatorMetricsShard {
     }
 
     @Override
-    public long globalGaugeValue(MetricName metricName) {
-        AtomicLong gaugeCounter = globalGauges.get(metricName.getName());
+    public long globalGaugeValue(String metricName) {
+        AtomicLong gaugeCounter = globalGauges.get(metricName);
         if (gaugeCounter != null) {
             return gaugeCounter.get();
         }
@@ -178,8 +177,8 @@ public class GroupCoordinatorMetricsShard implements CoordinatorMetricsShard {
     }
 
     @Override
-    public long localGaugeValue(MetricName metricName) {
-        TimelineGaugeCounter gaugeCounter = localGauges.get(metricName.getName());
+    public long localGaugeValue(String metricName) {
+        TimelineGaugeCounter gaugeCounter = localGauges.get(metricName);
         if (gaugeCounter != null) {
             return gaugeCounter.atomicLong.get();
         }
@@ -229,43 +228,43 @@ public class GroupCoordinatorMetricsShard implements CoordinatorMetricsShard {
         if (newState != null) {
             switch (newState) {
                 case PREPARING_REBALANCE:
-                    incrementGlobalGauge(NUM_GENERIC_GROUPS_PREPARING_REBALANCE);
+                    incrementGlobalGauge(NUM_GENERIC_GROUPS_PREPARING_REBALANCE.getName());
                     break;
                 case COMPLETING_REBALANCE:
-                    incrementGlobalGauge(NUM_GENERIC_GROUPS_COMPLETING_REBALANCE);
+                    incrementGlobalGauge(NUM_GENERIC_GROUPS_COMPLETING_REBALANCE.getName());
                     break;
                 case STABLE:
-                    incrementGlobalGauge(NUM_GENERIC_GROUPS_STABLE);
+                    incrementGlobalGauge(NUM_GENERIC_GROUPS_STABLE.getName());
                     break;
                 case DEAD:
-                    incrementGlobalGauge(NUM_GENERIC_GROUPS_DEAD);
+                    incrementGlobalGauge(NUM_GENERIC_GROUPS_DEAD.getName());
                     break;
                 case EMPTY:
-                    incrementGlobalGauge(NUM_GENERIC_GROUPS_EMPTY);
+                    incrementGlobalGauge(NUM_GENERIC_GROUPS_EMPTY.getName());
             }
         } else {
-            decrementLocalGauge(NUM_GENERIC_GROUPS);
+            decrementLocalGauge(NUM_GENERIC_GROUPS.getName());
         }
 
         if (oldState != null) {
             switch (oldState) {
                 case PREPARING_REBALANCE:
-                    decrementGlobalGauge(NUM_GENERIC_GROUPS_PREPARING_REBALANCE);
+                    decrementGlobalGauge(NUM_GENERIC_GROUPS_PREPARING_REBALANCE.getName());
                     break;
                 case COMPLETING_REBALANCE:
-                    decrementGlobalGauge(NUM_GENERIC_GROUPS_COMPLETING_REBALANCE);
+                    decrementGlobalGauge(NUM_GENERIC_GROUPS_COMPLETING_REBALANCE.getName());
                     break;
                 case STABLE:
-                    decrementGlobalGauge(NUM_GENERIC_GROUPS_STABLE);
+                    decrementGlobalGauge(NUM_GENERIC_GROUPS_STABLE.getName());
                     break;
                 case DEAD:
-                    decrementGlobalGauge(NUM_GENERIC_GROUPS_DEAD);
+                    decrementGlobalGauge(NUM_GENERIC_GROUPS_DEAD.getName());
                     break;
                 case EMPTY:
-                    decrementGlobalGauge(NUM_GENERIC_GROUPS_EMPTY);
+                    decrementGlobalGauge(NUM_GENERIC_GROUPS_EMPTY.getName());
             }
         } else {
-            incrementLocalGauge(NUM_GENERIC_GROUPS);
+            incrementLocalGauge(NUM_GENERIC_GROUPS.getName());
         }
     }
 
@@ -283,43 +282,43 @@ public class GroupCoordinatorMetricsShard implements CoordinatorMetricsShard {
         if (newState != null) {
             switch (newState) {
                 case EMPTY:
-                    incrementLocalGauge(NUM_CONSUMER_GROUPS_EMPTY);
+                    incrementLocalGauge(NUM_CONSUMER_GROUPS_EMPTY_METRIC_NAME);
                     break;
                 case ASSIGNING:
-                    incrementLocalGauge(NUM_CONSUMER_GROUPS_ASSIGNING);
+                    incrementLocalGauge(NUM_CONSUMER_GROUPS_ASSIGNING_METRIC_NAME);
                     break;
                 case RECONCILING:
-                    incrementLocalGauge(NUM_CONSUMER_GROUPS_RECONCILING);
+                    incrementLocalGauge(NUM_CONSUMER_GROUPS_RECONCILING_METRIC_NAME);
                     break;
                 case STABLE:
-                    incrementLocalGauge(NUM_CONSUMER_GROUPS_STABLE);
+                    incrementLocalGauge(NUM_CONSUMER_GROUPS_STABLE_METRIC_NAME);
                     break;
                 case DEAD:
-                    incrementLocalGauge(NUM_CONSUMER_GROUPS_DEAD);
+                    incrementLocalGauge(NUM_CONSUMER_GROUPS_DEAD_METRIC_NAME);
             }
         } else {
-            decrementLocalGauge(NUM_CONSUMER_GROUPS);
+            decrementLocalGauge(NUM_CONSUMER_GROUPS_METRIC_NAME);
         }
 
         if (oldState != null) {
             switch (oldState) {
                 case EMPTY:
-                    decrementLocalGauge(NUM_CONSUMER_GROUPS_EMPTY);
+                    decrementLocalGauge(NUM_CONSUMER_GROUPS_EMPTY_METRIC_NAME);
                     break;
                 case ASSIGNING:
-                    decrementLocalGauge(NUM_CONSUMER_GROUPS_ASSIGNING);
+                    decrementLocalGauge(NUM_CONSUMER_GROUPS_ASSIGNING_METRIC_NAME);
                     break;
                 case RECONCILING:
-                    decrementLocalGauge(NUM_CONSUMER_GROUPS_RECONCILING);
+                    decrementLocalGauge(NUM_CONSUMER_GROUPS_RECONCILING_METRIC_NAME);
                     break;
                 case STABLE:
-                    decrementLocalGauge(NUM_CONSUMER_GROUPS_STABLE);
+                    decrementLocalGauge(NUM_CONSUMER_GROUPS_STABLE_METRIC_NAME);
                     break;
                 case DEAD:
-                    decrementLocalGauge(NUM_CONSUMER_GROUPS_DEAD);
+                    decrementLocalGauge(NUM_CONSUMER_GROUPS_DEAD_METRIC_NAME);
             }
         } else {
-            incrementLocalGauge(NUM_CONSUMER_GROUPS);
+            incrementLocalGauge(NUM_CONSUMER_GROUPS_METRIC_NAME);
         }
     }
 }

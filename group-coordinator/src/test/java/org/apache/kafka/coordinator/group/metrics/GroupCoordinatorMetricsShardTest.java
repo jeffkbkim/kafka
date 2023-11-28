@@ -35,12 +35,12 @@ import static org.apache.kafka.coordinator.group.generic.GenericGroupState.DEAD;
 import static org.apache.kafka.coordinator.group.generic.GenericGroupState.EMPTY;
 import static org.apache.kafka.coordinator.group.generic.GenericGroupState.PREPARING_REBALANCE;
 import static org.apache.kafka.coordinator.group.generic.GenericGroupState.STABLE;
-import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS;
-import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS_ASSIGNING;
-import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS_DEAD;
-import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS_EMPTY;
-import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS_RECONCILING;
-import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS_STABLE;
+import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS_METRIC_NAME;
+import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS_ASSIGNING_METRIC_NAME;
+import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS_DEAD_METRIC_NAME;
+import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS_EMPTY_METRIC_NAME;
+import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS_RECONCILING_METRIC_NAME;
+import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_CONSUMER_GROUPS_STABLE_METRIC_NAME;
 import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_GENERIC_GROUPS;
 import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_GENERIC_GROUPS_COMPLETING_REBALANCE;
 import static org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetrics.NUM_GENERIC_GROUPS_DEAD;
@@ -63,55 +63,55 @@ public class GroupCoordinatorMetricsShardTest {
         GroupCoordinatorMetrics coordinatorMetrics = new GroupCoordinatorMetrics(registry, metrics);
         GroupCoordinatorMetricsShard shard = coordinatorMetrics.newMetricsShard(snapshotRegistry, tp);
 
-        shard.incrementLocalGauge(NUM_OFFSETS);
-        shard.incrementLocalGauge(NUM_GENERIC_GROUPS);
-        shard.incrementLocalGauge(NUM_CONSUMER_GROUPS);
-        shard.incrementLocalGauge(NUM_CONSUMER_GROUPS_EMPTY);
-        shard.incrementLocalGauge(NUM_CONSUMER_GROUPS_ASSIGNING);
-        shard.incrementLocalGauge(NUM_CONSUMER_GROUPS_RECONCILING);
-        shard.incrementLocalGauge(NUM_CONSUMER_GROUPS_STABLE);
-        shard.incrementLocalGauge(NUM_CONSUMER_GROUPS_DEAD);
+        shard.incrementLocalGauge(NUM_OFFSETS.getName());
+        shard.incrementLocalGauge(NUM_GENERIC_GROUPS.getName());
+        shard.incrementLocalGauge(NUM_CONSUMER_GROUPS_METRIC_NAME);
+        shard.incrementLocalGauge(NUM_CONSUMER_GROUPS_EMPTY_METRIC_NAME);
+        shard.incrementLocalGauge(NUM_CONSUMER_GROUPS_ASSIGNING_METRIC_NAME);
+        shard.incrementLocalGauge(NUM_CONSUMER_GROUPS_RECONCILING_METRIC_NAME);
+        shard.incrementLocalGauge(NUM_CONSUMER_GROUPS_STABLE_METRIC_NAME);
+        shard.incrementLocalGauge(NUM_CONSUMER_GROUPS_DEAD_METRIC_NAME);
 
         snapshotRegistry.getOrCreateSnapshot(1000);
         // The value should not be updated until the offset has been committed.
-        assertEquals(0, shard.localGaugeValue(NUM_OFFSETS));
-        assertEquals(0, shard.localGaugeValue(NUM_GENERIC_GROUPS));
-        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS));
-        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_EMPTY));
-        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_ASSIGNING));
-        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_RECONCILING));
-        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_STABLE));
-        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_DEAD));
+        assertEquals(0, shard.localGaugeValue(NUM_OFFSETS.getName()));
+        assertEquals(0, shard.localGaugeValue(NUM_GENERIC_GROUPS.getName()));
+        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_METRIC_NAME));
+        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_EMPTY_METRIC_NAME));
+        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_ASSIGNING_METRIC_NAME));
+        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_RECONCILING_METRIC_NAME));
+        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_STABLE_METRIC_NAME));
+        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_DEAD_METRIC_NAME));
 
         shard.commitUpTo(1000);
-        assertEquals(1, shard.localGaugeValue(NUM_OFFSETS));
-        assertEquals(1, shard.localGaugeValue(NUM_GENERIC_GROUPS));
-        assertEquals(1, shard.localGaugeValue(NUM_CONSUMER_GROUPS));
-        assertEquals(1, shard.localGaugeValue(NUM_CONSUMER_GROUPS_EMPTY));
-        assertEquals(1, shard.localGaugeValue(NUM_CONSUMER_GROUPS_ASSIGNING));
-        assertEquals(1, shard.localGaugeValue(NUM_CONSUMER_GROUPS_RECONCILING));
-        assertEquals(1, shard.localGaugeValue(NUM_CONSUMER_GROUPS_STABLE));
-        assertEquals(1, shard.localGaugeValue(NUM_CONSUMER_GROUPS_DEAD));
+        assertEquals(1, shard.localGaugeValue(NUM_OFFSETS.getName()));
+        assertEquals(1, shard.localGaugeValue(NUM_GENERIC_GROUPS.getName()));
+        assertEquals(1, shard.localGaugeValue(NUM_CONSUMER_GROUPS_METRIC_NAME));
+        assertEquals(1, shard.localGaugeValue(NUM_CONSUMER_GROUPS_EMPTY_METRIC_NAME));
+        assertEquals(1, shard.localGaugeValue(NUM_CONSUMER_GROUPS_ASSIGNING_METRIC_NAME));
+        assertEquals(1, shard.localGaugeValue(NUM_CONSUMER_GROUPS_RECONCILING_METRIC_NAME));
+        assertEquals(1, shard.localGaugeValue(NUM_CONSUMER_GROUPS_STABLE_METRIC_NAME));
+        assertEquals(1, shard.localGaugeValue(NUM_CONSUMER_GROUPS_DEAD_METRIC_NAME));
 
-        shard.decrementLocalGauge(NUM_OFFSETS);
-        shard.decrementLocalGauge(NUM_GENERIC_GROUPS);
-        shard.decrementLocalGauge(NUM_CONSUMER_GROUPS);
-        shard.decrementLocalGauge(NUM_CONSUMER_GROUPS_EMPTY);
-        shard.decrementLocalGauge(NUM_CONSUMER_GROUPS_ASSIGNING);
-        shard.decrementLocalGauge(NUM_CONSUMER_GROUPS_RECONCILING);
-        shard.decrementLocalGauge(NUM_CONSUMER_GROUPS_STABLE);
-        shard.decrementLocalGauge(NUM_CONSUMER_GROUPS_DEAD);
+        shard.decrementLocalGauge(NUM_OFFSETS.getName());
+        shard.decrementLocalGauge(NUM_GENERIC_GROUPS.getName());
+        shard.decrementLocalGauge(NUM_CONSUMER_GROUPS_METRIC_NAME);
+        shard.decrementLocalGauge(NUM_CONSUMER_GROUPS_EMPTY_METRIC_NAME);
+        shard.decrementLocalGauge(NUM_CONSUMER_GROUPS_ASSIGNING_METRIC_NAME);
+        shard.decrementLocalGauge(NUM_CONSUMER_GROUPS_RECONCILING_METRIC_NAME);
+        shard.decrementLocalGauge(NUM_CONSUMER_GROUPS_STABLE_METRIC_NAME);
+        shard.decrementLocalGauge(NUM_CONSUMER_GROUPS_DEAD_METRIC_NAME);
 
         snapshotRegistry.getOrCreateSnapshot(2000);
         shard.commitUpTo(2000);
-        assertEquals(0, shard.localGaugeValue(NUM_OFFSETS));
-        assertEquals(0, shard.localGaugeValue(NUM_GENERIC_GROUPS));
-        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS));
-        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_EMPTY));
-        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_ASSIGNING));
-        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_RECONCILING));
-        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_STABLE));
-        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_DEAD));
+        assertEquals(0, shard.localGaugeValue(NUM_OFFSETS.getName()));
+        assertEquals(0, shard.localGaugeValue(NUM_GENERIC_GROUPS.getName()));
+        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_METRIC_NAME));
+        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_EMPTY_METRIC_NAME));
+        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_ASSIGNING_METRIC_NAME));
+        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_RECONCILING_METRIC_NAME));
+        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_STABLE_METRIC_NAME));
+        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_DEAD_METRIC_NAME));
     }
 
     @Test
@@ -132,7 +132,7 @@ public class GroupCoordinatorMetricsShardTest {
 
         snapshotRegistry.getOrCreateSnapshot(1000);
         shard.commitUpTo(1000);
-        assertEquals(4, shard.localGaugeValue(NUM_GENERIC_GROUPS));
+        assertEquals(4, shard.localGaugeValue(NUM_GENERIC_GROUPS.getName()));
 
         group0.transitionTo(PREPARING_REBALANCE);
         group0.transitionTo(COMPLETING_REBALANCE);
@@ -141,11 +141,11 @@ public class GroupCoordinatorMetricsShardTest {
 
         snapshotRegistry.getOrCreateSnapshot(2000);
         shard.commitUpTo(2000);
-        assertEquals(1, shard.globalGaugeValue(NUM_GENERIC_GROUPS_EMPTY));
-        assertEquals(1, shard.globalGaugeValue(NUM_GENERIC_GROUPS_PREPARING_REBALANCE));
-        assertEquals(1, shard.globalGaugeValue(NUM_GENERIC_GROUPS_COMPLETING_REBALANCE));
-        assertEquals(1, shard.globalGaugeValue(NUM_GENERIC_GROUPS_DEAD));
-        assertEquals(0, shard.globalGaugeValue(NUM_GENERIC_GROUPS_STABLE));
+        assertEquals(1, shard.globalGaugeValue(NUM_GENERIC_GROUPS_EMPTY.getName()));
+        assertEquals(1, shard.globalGaugeValue(NUM_GENERIC_GROUPS_PREPARING_REBALANCE.getName()));
+        assertEquals(1, shard.globalGaugeValue(NUM_GENERIC_GROUPS_COMPLETING_REBALANCE.getName()));
+        assertEquals(1, shard.globalGaugeValue(NUM_GENERIC_GROUPS_DEAD.getName()));
+        assertEquals(0, shard.globalGaugeValue(NUM_GENERIC_GROUPS_STABLE.getName()));
 
         group0.transitionTo(STABLE);
         group1.transitionTo(COMPLETING_REBALANCE);
@@ -153,11 +153,11 @@ public class GroupCoordinatorMetricsShardTest {
 
         snapshotRegistry.getOrCreateSnapshot(3000);
         shard.commitUpTo(3000);
-        assertEquals(0, shard.globalGaugeValue(NUM_GENERIC_GROUPS_EMPTY));
-        assertEquals(0, shard.globalGaugeValue(NUM_GENERIC_GROUPS_PREPARING_REBALANCE));
-        assertEquals(1, shard.globalGaugeValue(NUM_GENERIC_GROUPS_COMPLETING_REBALANCE));
-        assertEquals(2, shard.globalGaugeValue(NUM_GENERIC_GROUPS_DEAD));
-        assertEquals(1, shard.globalGaugeValue(NUM_GENERIC_GROUPS_STABLE));
+        assertEquals(0, shard.globalGaugeValue(NUM_GENERIC_GROUPS_EMPTY.getName()));
+        assertEquals(0, shard.globalGaugeValue(NUM_GENERIC_GROUPS_PREPARING_REBALANCE.getName()));
+        assertEquals(1, shard.globalGaugeValue(NUM_GENERIC_GROUPS_COMPLETING_REBALANCE.getName()));
+        assertEquals(2, shard.globalGaugeValue(NUM_GENERIC_GROUPS_DEAD.getName()));
+        assertEquals(1, shard.globalGaugeValue(NUM_GENERIC_GROUPS_STABLE.getName()));
 
         assertGaugeValue(registry, metricName("GroupMetadataManager", "NumGroups"), 4);
         assertGaugeValue(registry, metricName("GroupMetadataManager", "NumGroupsEmpty"), 0);
@@ -200,8 +200,8 @@ public class GroupCoordinatorMetricsShardTest {
 
         snapshotRegistry.getOrCreateSnapshot(1000);
         shard.commitUpTo(1000);
-        assertEquals(4, shard.localGaugeValue(NUM_CONSUMER_GROUPS));
-        assertEquals(4, shard.localGaugeValue(NUM_CONSUMER_GROUPS_EMPTY));
+        assertEquals(4, shard.localGaugeValue(NUM_CONSUMER_GROUPS_METRIC_NAME));
+        assertEquals(4, shard.localGaugeValue(NUM_CONSUMER_GROUPS_EMPTY_METRIC_NAME));
 
         ConsumerGroupMember member0 = group0.getOrMaybeCreateMember("member-id", true);
         ConsumerGroupMember member1 = group1.getOrMaybeCreateMember("member-id", true);
@@ -214,17 +214,17 @@ public class GroupCoordinatorMetricsShardTest {
 
         snapshotRegistry.getOrCreateSnapshot(2000);
         shard.commitUpTo(2000);
-        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_EMPTY));
-        assertEquals(4, shard.localGaugeValue(NUM_CONSUMER_GROUPS_STABLE));
+        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_EMPTY_METRIC_NAME));
+        assertEquals(4, shard.localGaugeValue(NUM_CONSUMER_GROUPS_STABLE_METRIC_NAME));
 
         group2.setGroupEpoch(1);
         group3.setGroupEpoch(1);
 
         snapshotRegistry.getOrCreateSnapshot(3000);
         shard.commitUpTo(3000);
-        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_EMPTY));
-        assertEquals(2, shard.localGaugeValue(NUM_CONSUMER_GROUPS_ASSIGNING));
-        assertEquals(2, shard.localGaugeValue(NUM_CONSUMER_GROUPS_STABLE));
+        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_EMPTY_METRIC_NAME));
+        assertEquals(2, shard.localGaugeValue(NUM_CONSUMER_GROUPS_ASSIGNING_METRIC_NAME));
+        assertEquals(2, shard.localGaugeValue(NUM_CONSUMER_GROUPS_STABLE_METRIC_NAME));
 
         group2.setTargetAssignmentEpoch(1);
         // Set member2 to ASSIGNING state.
@@ -234,16 +234,16 @@ public class GroupCoordinatorMetricsShardTest {
 
         snapshotRegistry.getOrCreateSnapshot(4000);
         shard.commitUpTo(4000);
-        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_EMPTY));
-        assertEquals(1, shard.localGaugeValue(NUM_CONSUMER_GROUPS_ASSIGNING));
-        assertEquals(1, shard.localGaugeValue(NUM_CONSUMER_GROUPS_RECONCILING));
-        assertEquals(2, shard.localGaugeValue(NUM_CONSUMER_GROUPS_STABLE));
+        assertEquals(0, shard.localGaugeValue(NUM_CONSUMER_GROUPS_EMPTY_METRIC_NAME));
+        assertEquals(1, shard.localGaugeValue(NUM_CONSUMER_GROUPS_ASSIGNING_METRIC_NAME));
+        assertEquals(1, shard.localGaugeValue(NUM_CONSUMER_GROUPS_RECONCILING_METRIC_NAME));
+        assertEquals(2, shard.localGaugeValue(NUM_CONSUMER_GROUPS_STABLE_METRIC_NAME));
 
-        assertGaugeValue(registry, metricName("GroupMetadataManager", "NumConsumerGroups"), 4);
-        assertGaugeValue(registry, metricName("GroupMetadataManager", "NumConsumerGroupsEmpty"), 0);
-        assertGaugeValue(registry, metricName("GroupMetadataManager", "NumConsumerGroupsAssigning"), 1);
-        assertGaugeValue(registry, metricName("GroupMetadataManager", "NumConsumerGroupsReconciling"), 1);
-        assertGaugeValue(registry, metricName("GroupMetadataManager", "NumConsumerGroupsStable"), 2);
-        assertGaugeValue(registry, metricName("GroupMetadataManager", "NumConsumerGroupsDead"), 0);
+        assertGaugeValue(metrics, NUM_CONSUMER_GROUPS_METRIC_NAME, 4);
+        assertGaugeValue(metrics, NUM_CONSUMER_GROUPS_EMPTY_METRIC_NAME, 0);
+        assertGaugeValue(metrics, NUM_CONSUMER_GROUPS_ASSIGNING_METRIC_NAME, 1);
+        assertGaugeValue(metrics, NUM_CONSUMER_GROUPS_RECONCILING_METRIC_NAME, 1);
+        assertGaugeValue(metrics, NUM_CONSUMER_GROUPS_STABLE_METRIC_NAME, 2);
+        assertGaugeValue(metrics, NUM_CONSUMER_GROUPS_DEAD_METRIC_NAME, 0);
     }
 }

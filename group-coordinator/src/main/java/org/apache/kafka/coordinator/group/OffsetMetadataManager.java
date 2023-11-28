@@ -740,7 +740,7 @@ public class OffsetMetadataManager {
         TimelineHashMap<Integer, OffsetAndMetadata> partitionOffsets = topicOffsets
             .computeIfAbsent(topic, __ -> new TimelineHashMap<>(snapshotRegistry, 0));
         if (partitionOffsets.put(partition, offsetAndMetadata) == null) {
-            metrics.incrementLocalGauge(NUM_OFFSETS);
+            metrics.incrementLocalGauge(NUM_OFFSETS.getName());
         }
     }
 
@@ -765,7 +765,7 @@ public class OffsetMetadataManager {
             return;
 
         partitionOffsets.remove(partition);
-        metrics.decrementLocalGauge(NUM_OFFSETS);
+        metrics.decrementLocalGauge(NUM_OFFSETS.getName());
 
         if (partitionOffsets.isEmpty())
             topicOffsets.remove(topic);
