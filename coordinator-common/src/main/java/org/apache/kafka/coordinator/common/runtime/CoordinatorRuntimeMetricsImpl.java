@@ -66,6 +66,11 @@ public class CoordinatorRuntimeMetricsImpl implements CoordinatorRuntimeMetrics 
     public static final String BATCH_FLUSH_TIME_METRIC_NAME = "batch-flush-time-ms";
 
     /**
+     * The flush time metric name.
+     */
+    public static final String BATCH_FLUSH_INTERVAL_METRIC_NAME = "batch-flush-interval-time-ms";
+
+    /**
      * Metric to count the number of partitions in Loading state.
      */
     private final MetricName numPartitionsLoading;
@@ -122,6 +127,11 @@ public class CoordinatorRuntimeMetricsImpl implements CoordinatorRuntimeMetrics 
      * Sensor to measure the flush time.
      */
     private final Sensor flushTimeSensor;
+
+    /**
+     * Sensor to measure the flush interval time.
+     */
+    private final Sensor flushIntervalTimeSensor;
 
     public CoordinatorRuntimeMetricsImpl(Metrics metrics, String metricsGroup) {
         this.metrics = Objects.requireNonNull(metrics);
@@ -209,6 +219,15 @@ public class CoordinatorRuntimeMetricsImpl implements CoordinatorRuntimeMetrics 
         );
         this.flushTimeSensor = metrics.sensor("FlushTime");
         this.flushTimeSensor.add(flushTimeHistogram);
+
+        KafkaMetricHistogram flushIntervalHistogram = KafkaMetricHistogram.newLatencyHistogram(
+            suffix -> kafkaMetricName(
+                BATCH_FLUSH_INTERVAL_METRIC_NAME + "-" + suffix,
+                "The " + suffix + " flush interval time in milliseconds"
+            )
+        );
+        this.flushIntervalTimeSensor = metrics.sensor("FlushIntervalTime");
+        this.flushIntervalTimeSensor.add(flushIntervalHistogram);
     }
 
     /**
@@ -237,6 +256,7 @@ public class CoordinatorRuntimeMetricsImpl implements CoordinatorRuntimeMetrics 
         metrics.removeSensor(eventProcessingTimeSensor.name());
         metrics.removeSensor(eventPurgatoryTimeSensor.name());
         metrics.removeSensor(flushTimeSensor.name());
+        metrics.removeSensor(flushIntervalTimeSensor.name());
     }
 
     /**
@@ -299,6 +319,11 @@ public class CoordinatorRuntimeMetricsImpl implements CoordinatorRuntimeMetrics 
     @Override
     public void recordFlushTime(long durationMs) {
         flushTimeSensor.record(durationMs);
+    }
+
+    @Override
+    public void recordFlushIntervalTime(long durationMs) {
+        flushIntervalTimeSensor.record(durationMs);
     }
 
     @Override

@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.stream.IntStream;
 
+import static org.apache.kafka.coordinator.common.runtime.CoordinatorRuntimeMetricsImpl.BATCH_FLUSH_INTERVAL_METRIC_NAME;
 import static org.apache.kafka.coordinator.common.runtime.CoordinatorRuntimeMetricsImpl.BATCH_FLUSH_TIME_METRIC_NAME;
 import static org.apache.kafka.coordinator.common.runtime.CoordinatorRuntimeMetricsImpl.EVENT_PROCESSING_TIME_METRIC_NAME;
 import static org.apache.kafka.coordinator.common.runtime.CoordinatorRuntimeMetricsImpl.EVENT_PURGATORY_TIME_METRIC_NAME;
@@ -76,7 +77,12 @@ public class CoordinatorRuntimeMetricsImplTest {
             kafkaMetricName(metrics, "batch-flush-time-ms-p50"),
             kafkaMetricName(metrics, "batch-flush-time-ms-p95"),
             kafkaMetricName(metrics, "batch-flush-time-ms-p99"),
-            kafkaMetricName(metrics, "batch-flush-time-ms-p999")
+            kafkaMetricName(metrics, "batch-flush-time-ms-p999"),
+            kafkaMetricName(metrics, "batch-flush-interval-time-ms-max"),
+            kafkaMetricName(metrics, "batch-flush-interval-time-ms-p50"),
+            kafkaMetricName(metrics, "batch-flush-interval-time-ms-p95"),
+            kafkaMetricName(metrics, "batch-flush-interval-time-ms-p99"),
+            kafkaMetricName(metrics, "batch-flush-interval-time-ms-p999")
         ));
 
         try (CoordinatorRuntimeMetricsImpl runtimeMetrics = new CoordinatorRuntimeMetricsImpl(metrics, METRICS_GROUP)) {
@@ -160,7 +166,8 @@ public class CoordinatorRuntimeMetricsImplTest {
         EVENT_QUEUE_TIME_METRIC_NAME,
         EVENT_PROCESSING_TIME_METRIC_NAME,
         EVENT_PURGATORY_TIME_METRIC_NAME,
-        BATCH_FLUSH_TIME_METRIC_NAME
+        BATCH_FLUSH_TIME_METRIC_NAME,
+        BATCH_FLUSH_INTERVAL_METRIC_NAME
     })
     public void testHistogramMetrics(String metricNamePrefix) {
         Time time = new MockTime();
@@ -181,6 +188,9 @@ public class CoordinatorRuntimeMetricsImplTest {
                     break;
                 case BATCH_FLUSH_TIME_METRIC_NAME:
                     runtimeMetrics.recordFlushTime(i);
+                    break;
+                case BATCH_FLUSH_INTERVAL_METRIC_NAME:
+                    runtimeMetrics.recordFlushIntervalTime(i);
             }
         });
 
