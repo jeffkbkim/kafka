@@ -782,12 +782,18 @@ public class CoordinatorRuntime<S extends CoordinatorShard<U>, U> implements Aut
                     long flushStartMs = time.milliseconds();
                     runtimeMetrics.recordFlushIntervalTime(flushStartMs - currentBatch.appendTimeMs);
                     // Write the records to the log and update the last written offset.
+                    MemoryRecords records = currentBatch.builder.build();
+                    log.info("Flushing batch. interval:{}, records:{}, estimatedSize={}",
+                        flushStartMs - currentBatch.appendTimeMs,
+                        currentBatch.builder.numRecords(), currentBatch.builder.estimatedSizeInBytes());
+
                     long offset = partitionWriter.append(
                         tp,
                         currentBatch.verificationGuard,
-                        currentBatch.builder.build()
+                        records
                     );
                     runtimeMetrics.recordFlushTime(time.milliseconds() - flushStartMs);
+                    log.info("Recorded flush time:{}", time.milliseconds() - flushStartMs);
                     coordinator.updateLastWrittenOffset(offset);
 
                     if (offset != currentBatch.nextOffset) {
@@ -888,6 +894,8 @@ public class CoordinatorRuntime<S extends CoordinatorShard<U>, U> implements Aut
                             // to ensure that the linger time is respected.
                             enqueueFirst(new CoordinatorInternalEvent("FlushBatch", tp, () -> {
                                 if (this.isCancelled()) return;
+                                log.info("timed out. elapsed time: {}; appendLingerMs: {}", time.milliseconds() - currentBatch.appendTimeMs, appendLingerMs);
+
                                 withActiveContextOrThrow(tp, CoordinatorContext::flushCurrentBatch);
                             }));
                         }
@@ -1357,6 +1365,7 @@ public class CoordinatorRuntime<S extends CoordinatorShard<U>, U> implements Aut
                         timer.add(operationTimeout);
 
                         // Only update when this event was appended to the deferred queue.
+                        log.info("Starting event purgatory time.");
                         deferredEventQueuedTimestamp = time.milliseconds();
                     }
                 });
@@ -1396,6 +1405,7 @@ public class CoordinatorRuntime<S extends CoordinatorShard<U>, U> implements Aut
             if (deferredEventQueuedTimestamp != NOT_QUEUED) {
                 // Only record the purgatory time if the event was deferred.
                 runtimeMetrics.recordEventPurgatoryTime(purgatoryTimeMs);
+                log.info("recorded event purgatory time:{}", purgatoryTimeMs);
             }
         }
 

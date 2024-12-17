@@ -41,7 +41,7 @@ import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
 
 class GroupCoordinatorBaseRequestTest(cluster: ClusterInstance) {
-  private def brokers(): Seq[KafkaBroker] = cluster.brokers.values().stream().collect(Collectors.toList[KafkaBroker]).asScala.toSeq
+  def brokers(): Seq[KafkaBroker] = cluster.brokers.values().stream().collect(Collectors.toList[KafkaBroker]).asScala.toSeq
 
   private def controllerServers(): Seq[ControllerServer] = cluster.controllers().values().asScala.toSeq
 

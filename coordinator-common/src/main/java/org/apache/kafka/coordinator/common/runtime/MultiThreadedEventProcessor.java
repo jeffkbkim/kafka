@@ -138,6 +138,7 @@ public final class MultiThreadedEventProcessor implements CoordinatorEventProces
                 CoordinatorEvent event = accumulator.poll(POLL_TIMEOUT_MS, TimeUnit.MILLISECONDS);
                 long idleEndTimeMs = time.milliseconds();
                 long idleTimeMs = idleEndTimeMs - idleStartTimeMs;
+                log.info("Dequeued event: {} at {}. idle time:{}", event, idleEndTimeMs, idleTimeMs);
                 metrics.recordThreadIdleTime(idleTimeMs / threads.size());
                 if (event != null) {
                     try {
@@ -203,7 +204,9 @@ public final class MultiThreadedEventProcessor implements CoordinatorEventProces
      */
     @Override
     public void enqueueLast(CoordinatorEvent event) throws RejectedExecutionException {
+        long startMs = time.milliseconds();
         accumulator.addLast(event);
+        log.info("Enqueued last event {} queue time: {}", event, startMs - time.milliseconds());
     }
 
     /**
@@ -214,7 +217,9 @@ public final class MultiThreadedEventProcessor implements CoordinatorEventProces
      */
     @Override
     public void enqueueFirst(CoordinatorEvent event) throws RejectedExecutionException {
+        long startMs = time.milliseconds();
         accumulator.addFirst(event);
+        log.info("Enqueued first event {} queue time: {}", event, startMs - time.milliseconds());
     }
 
     /**

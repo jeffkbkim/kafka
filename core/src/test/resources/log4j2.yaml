@@ -34,5 +34,18 @@ Configuration:
       - name: kafka
         level: WARN
 
-      - name: org.apache.kafka
-        level: WARN
+#      - name: kafka.server
+#        level: DEBUG
+#
+#      - name: org.apache.kafka.coordinator.common.runtime
+#        level: DEBUG
+#        additivity: false
+#        AppenderRef:
+#          - ref: STDOUT
+#
+#      - name: kafka.coordinator.group
+#        level: DEBUG
+#        additivity: false
+#        AppenderRef:
+#          - ref: STDOUT
+

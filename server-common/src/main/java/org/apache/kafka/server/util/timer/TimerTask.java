@@ -48,6 +48,10 @@ public abstract class TimerTask implements Runnable {
         }
     }
 
+    public long delayMs() {
+        return this.delayMs;
+    }
+
     TimerTaskEntry getTimerTaskEntry() {
         return timerTaskEntry;
     }
