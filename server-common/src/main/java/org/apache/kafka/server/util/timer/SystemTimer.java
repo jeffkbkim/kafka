@@ -17,8 +17,10 @@
 package org.apache.kafka.server.util.timer;
 
 import org.apache.kafka.common.utils.KafkaThread;
+import org.apache.kafka.common.utils.LogContext;
 import org.apache.kafka.common.utils.ThreadUtils;
 import org.apache.kafka.common.utils.Time;
+import org.slf4j.Logger;
 
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.ExecutorService;
@@ -41,6 +43,10 @@ public class SystemTimer implements Timer {
     private final ReentrantReadWriteLock.ReadLock readLock = readWriteLock.readLock();
     private final ReentrantReadWriteLock.WriteLock writeLock = readWriteLock.writeLock();
 
+    private final Logger log;
+
+    private final String executorName;
+
     public SystemTimer(String executorName) {
         this(executorName, 1, 20, Time.SYSTEM.hiResClockMs());
     }
@@ -51,6 +57,8 @@ public class SystemTimer implements Timer {
         int wheelSize,
         long startMs
     ) {
+        this.executorName = executorName;
+        this.log = new LogContext().logger(SystemTimer.class);
         this.taskExecutor = Executors.newFixedThreadPool(1,
             runnable -> KafkaThread.nonDaemon(SYSTEM_TIMER_THREAD_PREFIX + executorName, runnable));
         this.delayQueue = new DelayQueue<>();
@@ -74,9 +82,13 @@ public class SystemTimer implements Timer {
     }
 
     private void addTimerTaskEntry(TimerTaskEntry timerTaskEntry) {
+        log.info("Maybe adding timer task entry: {}", timerTaskEntry.timerTask.delayMs);
         if (!timingWheel.add(timerTaskEntry)) {
             // Already expired or cancelled
             if (!timerTaskEntry.cancelled()) {
+                if (executorName.equals("group-coordinator")) {
+                    log.info("Submitting timer task {}", timerTaskEntry.timerTask);
+                }
                 taskExecutor.submit(timerTaskEntry.timerTask);
             }
         }
@@ -87,7 +99,13 @@ public class SystemTimer implements Timer {
      * waits up to timeoutMs before giving up.
      */
     public boolean advanceClock(long timeoutMs) throws InterruptedException {
+        if (executorName.equals("group-coordinator")) {
+            log.info("Advancing clock and polling for {}", timeoutMs);
+        }
         TimerTaskList bucket = delayQueue.poll(timeoutMs, TimeUnit.MILLISECONDS);
+        if (executorName.equals("group-coordinator")) {
+            log.info("Retrieved bucket {} with delay {}", bucket, bucket == null ? "NA" : bucket.getDelay(TimeUnit.MILLISECONDS));
+        }
         if (bucket != null) {
             writeLock.lock();
             try {

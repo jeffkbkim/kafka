@@ -16,7 +16,11 @@
  */
 package org.apache.kafka.server.util.timer;
 
+import org.apache.kafka.common.utils.LogContext;
+import org.slf4j.Logger;
+
 import java.util.concurrent.DelayQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -103,6 +107,8 @@ public class TimingWheel {
     private final TimerTaskList[] buckets;
     private long currentTimeMs;
 
+    private final Logger log = new LogContext().logger(TimingWheel.class);
+
     // overflowWheel can potentially be updated and read by two concurrent threads through add().
     // Therefore, it needs to be volatile due to the issue of Double-Checked Locking pattern with JVM
     private volatile TimingWheel overflowWheel = null;
@@ -163,6 +169,8 @@ public class TimingWheel {
                 // and the previous buckets gets reused; further calls to set the expiration within the same wheel cycle
                 // will pass in the same value and hence return false, thus the bucket with the same expiration will not
                 // be enqueued multiple times.
+
+                log.info("Adding bucket id {}: {} with delay {} to queue. expiration: {}, setExpiration: {}, current time: {}", bucketId, bucket, bucket.getDelay(TimeUnit.MILLISECONDS), expiration, virtualId * tickMs, currentTimeMs);
                 queue.offer(bucket);
             }
 

@@ -1150,6 +1150,8 @@ project(':core') {
     testImplementation libs.junitJupiter
     testImplementation libs.slf4jLog4j2
     testImplementation libs.caffeine
+    // https://mvnrepository.com/artifact/tools.profiler/async-profiler
+    testImplementation libs.asyncProfiler
 
     testRuntimeOnly runtimeTestLibs
   }

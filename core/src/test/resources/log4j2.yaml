@@ -37,15 +37,22 @@ Configuration:
 #      - name: kafka.server
 #        level: DEBUG
 #
-#      - name: org.apache.kafka.coordinator.common.runtime
-#        level: DEBUG
-#        additivity: false
-#        AppenderRef:
-#          - ref: STDOUT
+      - name: org.apache.kafka.coordinator.common.runtime
+        level: DEBUG
+        additivity: false
+        AppenderRef:
+          - ref: STDOUT
+
+      - name: org.apache.kafka.server.util.timer
+        level: DEBUG
+        additivity: false
+        AppenderRef:
+          - ref: STDOUT
+#
 #
 #      - name: kafka.coordinator.group
 #        level: DEBUG
 #        additivity: false
 #        AppenderRef:
 #          - ref: STDOUT
-
+#

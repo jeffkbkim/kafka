@@ -120,7 +120,7 @@ class TimerTaskList implements Delayed {
 
     @Override
     public long getDelay(TimeUnit unit) {
-        return unit.convert(Math.max(getExpiration() - time.hiResClockMs(), 0), TimeUnit.MILLISECONDS);
+        return unit.convert(getExpiration() - time.hiResClockMs(), TimeUnit.MILLISECONDS);
     }
 
     @Override

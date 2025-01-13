@@ -135,6 +135,7 @@ public final class MultiThreadedEventProcessor implements CoordinatorEventProces
                 // time should be discounted by # threads.
 
                 long idleStartTimeMs = time.milliseconds();
+                log.info("polling for event...");
                 CoordinatorEvent event = accumulator.poll(POLL_TIMEOUT_MS, TimeUnit.MILLISECONDS);
                 long idleEndTimeMs = time.milliseconds();
                 long idleTimeMs = idleEndTimeMs - idleStartTimeMs;
@@ -218,8 +219,9 @@ public final class MultiThreadedEventProcessor implements CoordinatorEventProces
     @Override
     public void enqueueFirst(CoordinatorEvent event) throws RejectedExecutionException {
         long startMs = time.milliseconds();
+        log.info("Enqueueing event {} to the head of the queue", event);
         accumulator.addFirst(event);
-        log.info("Enqueued first event {} queue time: {}", event, startMs - time.milliseconds());
+        log.info("Enqueued first event {} queue time: {}", event, time.milliseconds() - startMs);
     }
 
     /**

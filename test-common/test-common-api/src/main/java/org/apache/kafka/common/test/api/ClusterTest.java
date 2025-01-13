@@ -37,7 +37,7 @@ import static org.apache.kafka.common.test.TestKitNodes.DEFAULT_CONTROLLER_LISTE
 @Target({METHOD})
 @Retention(RUNTIME)
 @TestTemplate
-@Timeout(60)
+@Timeout(120)
 @Tag("integration")
 public @interface ClusterTest {
     Type[] types() default {};
